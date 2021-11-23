@@ -22,8 +22,7 @@ export const  createNew = async(data) => {
         const val = await validateSchema(data)
         const result = await getDB().collection(boardCollection).insertOne(val)
         return result
-    } catch (error) {
-        console.log(error);
+    } catch (error) {      
         return error
     }
 }

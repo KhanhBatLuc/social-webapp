@@ -19,12 +19,25 @@ const bootServer =  () => {
   const app = express();
 
   // parse application/x-www-form-urlencoded
-  app.use(bodyParser.urlencoded({ extended: false }))
+  app.use(bodyParser.urlencoded({ extended: true }))
 
   // parse application/json
   app.use(bodyParser.json())
 
-  app.use('/api/v1',api)
+  app.use('/api/v1', api)
+  //with router not found
+  app.use((req, res, next) => {
+    const error = new Error('this is not found')
+    error.status = 404
+    next(error)
+  })
+
+  app.use((error, req, res, next) => {
+    res.json({
+      status: error.status,
+      message:error.message
+    })
+  })
 
   
   app.listen(env.APP_PORT, env.APP_HOST, () => {
