@@ -2,7 +2,7 @@ import express from "express";
 
 import { boardRoute } from "./board.route"
 import { authRouter } from "./auth.route"
-import { validateBody } from "*/helpers/validationRouter.helpers";
+import { validateBody } from "*/middlewares/validationRouter.helpers";
 import { schemas } from "*/validations/broad.request";
 // call router express
 const router = express.Router()

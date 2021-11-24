@@ -3,6 +3,8 @@ import bcrypt from "bcrypt"
 import { env } from "*/config/enviroment"
 import { Jwt } from "*/helpers/jwt.helpers"
 import createError from "http-errors"
+import client from "*/config/redis"
+
 /**
  * const Check mail = boolean
  * if checkMail = true , don't have an emailed
@@ -17,7 +19,7 @@ const createUserService = async(param) => {
         delete modify.confirmPassword
         // check mail exits
         const checkMail = await users.checkEmail(param.email)
-        if (!checkMail) return { mess: "exits email !" }
+        if (!checkMail) throw createError(400, 'Email exits')
         // create users
         const data = await users.createUser(modify)
        return data
@@ -30,10 +32,10 @@ const loginService = async(param) => {
     try {
          // check email and password
         const user = await users.Login(param.email)
-        if (!user) return createError([401],'Email not exits')
+        if (!user) throw createError(400, 'Email not exits')
         // 
         const checkpass = await bcrypt.compare(param.password, user.password)
-        if(!checkpass)  return createError([401],'Password fail')
+        if(!checkpass)  throw createError(400,'Password fail')
         // create generate access token
         // beside the generateToken have 3 parameter (sercertkey, data , expiresIn time)
         const accessToken = await Jwt.generateToken(env.ACCESS_TOKEN_SECRET, user, env.ACCESS_TOKEN_TIME)
@@ -41,12 +43,61 @@ const loginService = async(param) => {
         const refreshToken = await Jwt.generateToken(env.REFRESH_TOKEN_SECRET, user, env.REFRESH_TOKEN_TIME)
         // cobinew accessToken and refreshToken and then save in the database or something....
         const tokenList = {accessToken, refreshToken};
-        // save to the db
-        const saveToken = await users.saveListToken(tokenList , user._id)
-        if (!saveToken) return createError([401],'Error generate token')
-        // if save success token
-        return tokenList
+        // save to the db REDIS
+        // const saveToken = await users.saveListToken(tokenList , user._id)
+        // if (!saveToken) throw createError(400,'Error generate token')
+        client.set(user._id.toString(), refreshToken, 'Ex', 365*24*60*60 , (err, token) => {
+            if (err) {
+                throw createError.InternalServerError(err)
+            }
+        })
+        // if save success token       
+            return tokenList
+        
 
+    } catch (error) {
+        throw new Error(error.message)
+    }
+}
+
+const refreshTokenService = async(user) => {
+    try {
+
+          // create generate access token
+        // beside the generateToken have 3 parameter (sercertkey, data , expiresIn time)
+        const accessToken = await Jwt.generateToken(env.ACCESS_TOKEN_SECRET, user, env.ACCESS_TOKEN_TIME)
+        // after create accessToken , i will create another key (refresh token)
+        const refreshToken = await Jwt.generateToken(env.REFRESH_TOKEN_SECRET, user, env.REFRESH_TOKEN_TIME)
+        // cobinew accessToken and refreshToken and then save in the database or something....
+        const tokenList = { accessToken, refreshToken };
+          // save to the db REDIS
+        // const saveToken = await users.saveListToken(tokenList , user._id)
+        // if (!saveToken) throw createError(400,'Error generate token')
+        client.set(user._id.toString(), refreshToken, 'Ex', 365*24*60*60 , (err, token) => {
+            if (err) {
+                throw createError.InternalServerError(err)
+            }
+        })
+
+        return tokenList
+    } catch (error) {
+        throw new Error(error.message)
+    }
+}
+
+const logOutRervice = async(user) => {
+    try {
+        // delete data redis
+        client.del(user._id.toString(), (err, token) => {
+            if (err) {
+                throw createError.InternalServerError()
+            }           
+        })
+        return {
+            status: 200,
+            message:'logout success'
+        }
+        
     } catch (error) {
         throw new Error(error.message)
     }
@@ -55,6 +106,8 @@ const loginService = async(param) => {
 
 export const authServices = {
     loginService,
-    createUserService
+    createUserService,
+    refreshTokenService,
+    logOutRervice
     
 }

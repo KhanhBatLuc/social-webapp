@@ -1,4 +1,6 @@
 import jwt from "jsonwebtoken"
+import { env } from "*/config/enviroment"
+
 
 const generateToken = (sercertkey, data , expiresInTime) => {
     return new Promise(async (resolve, reject) => {
@@ -31,6 +33,18 @@ const generateToken = (sercertkey, data , expiresInTime) => {
     })
 }
 
+const verifyToken = (tokenClient) => {
+    return new Promise((resolve, reject) => {
+            jwt.verify(tokenClient,env.REFRESH_TOKEN_SECRET, (error, payload) => {
+                if (error) {
+                    reject(error.message)
+                }                
+                resolve(payload)
+            })            
+    })
+}
+
 export const Jwt = {
-    generateToken 
+    generateToken,
+    verifyToken
 }

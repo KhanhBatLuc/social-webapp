@@ -1,24 +1,44 @@
 import { authServices } from "*/services/auth.services";
 import { statusCode } from "*/untilities/contants";
 
-const createUsers = async(req, res) => {
+const createUsers = async(req, res,next) => {
    try {
-    let data = await authServices.createUserService(req.body)
-    res.status(statusCode.OK).json(data)
+       let data = await authServices.createUserService(req.body)
+        return res.status(statusCode.OK).json(data)
    } catch (error) {
-    res.status(statusCode.BAD_REQUEST).json(error)
+        next(error)
    }
 }
 
 const login = async (req, res,next) => {
     try {
         let data = await authServices.loginService(req.body)
-        res.status(statusCode.OK).json(data)
+        return res.status(statusCode.OK).json(data)
+    } catch (error) {      
+        next(error)
+    }
+}
+
+const refreshToken = async(req, res, next) => {
+    try {
+        let data = await authServices.refreshTokenService(req.dataRef)
+        return res.status(statusCode.OK).json(data)
     } catch (error) {
-        res.status(statusCode.BAD_REQUEST).json(error)
+        next(error)
+    }
+}
+const logout = async(req, res, next) => {
+    try {
+        let data = await authServices.logOutRervice(req.dataRef)
+        return res.status(statusCode.OK).json(data)
+        
+    } catch (error) {
+        next(error)
     }
 }
 export const authController = {
     createUsers,
-    login
+    login,
+    refreshToken,
+    logout
 }

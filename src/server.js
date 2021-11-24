@@ -3,6 +3,11 @@ import { connectDB } from "*/config/mongodb";
 import {env} from "*/config/enviroment"
 import { api } from "*/routes"
 import bodyParser from "body-parser"
+import client from "*/config/redis"
+import createError from "http-errors"
+// connect server redis
+
+
 // connect db
 connectDB()
   .then(() => console.log('connect db success'))  
@@ -25,16 +30,15 @@ const bootServer =  () => {
   app.use(bodyParser.json())
 
   app.use('/api/v1', api)
-  //with router not found
+  //with router not found 404
   app.use((req, res, next) => {
-    const error = new Error('this is not found')
-    error.status = 404
+    const error = createError.BadRequest('This page does not exits >')
     next(error)
   })
-
+// midlware handle Error 
   app.use((error, req, res, next) => {
     res.json({
-      status: error.status,
+      status: error.status || 400,
       message:error.message
     })
   })
